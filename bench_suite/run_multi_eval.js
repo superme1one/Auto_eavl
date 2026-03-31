@@ -1,6 +1,7 @@
 const path = require("path");
 
-const { buildLeaderboardRow, LEADERBOARD_HEADER, runAll, writeCsv } = require("./lib/runner");
+const { buildAutoDiscoverRunConfigs, DEFAULT_SCAN_ROOTS } = require("./lib/discovery");
+const { buildLeaderboardRow, LEADERBOARD_HEADER, resolveOutputRoot, runAll, writeCsv } = require("./lib/runner");
 const { ensureDir, readJson, writeJson } = require("./lib/utils");
 
 const BATCH_LEADERBOARD_HEADER = [
@@ -24,6 +25,15 @@ function parseArgs(argv) {
         const token = argv[i];
         if (token === "--config") {
             args.config = argv[++i];
+        } else if (token === "--auto-discover") {
+            args.autoDiscover = true;
+        } else if (token === "--batch-name") {
+            args.batchName = argv[++i];
+        } else if (token === "--scan-root") {
+            args.scanRoots = args.scanRoots || [];
+            args.scanRoots.push(argv[++i]);
+        } else if (token === "--dry-run") {
+            args.dryRun = true;
         }
     }
     return args;
@@ -92,6 +102,13 @@ function listEnabledDatasets(datasetsConfig) {
 }
 
 function buildRunConfigs(batchConfig) {
+    if (Array.isArray(batchConfig.run_configs) && batchConfig.run_configs.length > 0) {
+        return batchConfig.run_configs.map((config, index) => ({
+            batch_order: config.batch_order || index + 1,
+            ...config,
+        }));
+    }
+
     return batchConfig.model_refs.map((modelRef, index) => {
         const perModel = (batchConfig.per_model && batchConfig.per_model[modelRef]) || {};
         return {
@@ -106,8 +123,8 @@ function buildRunConfigs(batchConfig) {
 }
 
 function validateBatchConfig(batchConfig, runConfigs) {
-    if (!Array.isArray(batchConfig.model_refs) || batchConfig.model_refs.length === 0) {
-        throw new Error("Batch config must provide a non-empty model_refs array");
+    if (!Array.isArray(runConfigs) || runConfigs.length === 0) {
+        throw new Error("No runnable models found for this batch task");
     }
 
     if (batchConfig.per_model !== undefined && !isPlainObject(batchConfig.per_model)) {
@@ -228,22 +245,54 @@ function writeFailedRunSummary(outputDir, payload) {
 
 async function main() {
     const args = parseArgs(process.argv);
-    if (!args.config) {
+    if (!args.config && !args.autoDiscover) {
         console.error("Usage: node bench_suite/run_multi_eval.js --config <config.json>");
+        console.error("   or: node bench_suite/run_multi_eval.js --auto-discover [--batch-name <name>] [--scan-root <dir>] [--dry-run]");
         process.exit(1);
     }
 
     const baseDir = process.env.BENCH_BASE_DIR
         ? path.resolve(process.env.BENCH_BASE_DIR)
         : process.cwd();
-    const configPath = path.isAbsolute(args.config) ? args.config : path.resolve(baseDir, args.config);
-    const batchConfig = readJson(configPath);
-    const batchName = batchConfig.batch_name || "multi_eval";
-    const batchOutputDir = path.resolve(baseDir, "bench_suite", "outputs", batchName);
+
+    const batchConfig = args.autoDiscover
+        ? buildAutoDiscoverRunConfigs(baseDir, {
+            batchName: args.batchName,
+            scanRoots: args.scanRoots,
+        })
+        : readJson(path.isAbsolute(args.config) ? args.config : path.resolve(baseDir, args.config));
+
+    const configPath = args.autoDiscover
+        ? `[auto-discover roots=${(args.scanRoots && args.scanRoots.length > 0 ? args.scanRoots : DEFAULT_SCAN_ROOTS).join(",")}]`
+        : (path.isAbsolute(args.config) ? args.config : path.resolve(baseDir, args.config));
+
+    const batchName = batchConfig.batch_name || (args.autoDiscover ? "auto_discover_all_models" : "multi_eval");
+    const batchOutputDir = path.resolve(resolveOutputRoot(baseDir), batchName);
     ensureDir(batchOutputDir);
 
     const runConfigs = buildRunConfigs(batchConfig);
     validateBatchConfig(batchConfig, runConfigs);
+
+    if (args.autoDiscover) {
+        const discoveryPayload = {
+            batch_name: batchName,
+            mode: "auto_discover",
+            scan_roots: batchConfig.scan_roots,
+            discovered_models: batchConfig.discovered_models,
+            total_models: runConfigs.length,
+        };
+        writeJson(path.join(batchOutputDir, "discovered_models.json"), discoveryPayload);
+        console.log(`[AUTO DISCOVER] roots=${batchConfig.scan_roots.join(", ")}`);
+        console.log(`[AUTO DISCOVER] models=${runConfigs.length}`);
+        for (const runConfig of runConfigs) {
+            console.log(`  - ${runConfig.model_ref} | path=${runConfig.model.path} | kind=${runConfig.discovered_kind || "auto"}`);
+        }
+
+        if (args.dryRun) {
+            console.log(`[AUTO DISCOVER] Dry run only. Discovery written to: ${path.join(batchOutputDir, "discovered_models.json")}`);
+            return;
+        }
+    }
 
     const startedAt = new Date().toISOString();
     const results = [];
@@ -262,7 +311,9 @@ async function main() {
         );
 
         try {
-            const resolvedConfig = resolveModelConfig(runConfig, baseDir);
+            const resolvedConfig = runConfig.auto_discovered
+                ? runConfig
+                : resolveModelConfig(runConfig, baseDir);
             const { outputDir, summary } = await runAll(resolvedConfig, baseDir);
             results.push({
                 batch_order: runConfig.batch_order,
@@ -276,6 +327,7 @@ async function main() {
                 summary_file: path.join(outputDir, "summary.json"),
                 leaderboard_file: path.join(outputDir, "leaderboard.csv"),
                 enabled_datasets: enabledDatasets,
+                discovered_from: runConfig.discovered_from || "",
                 leaderboard: buildLeaderboardRow(summary),
                 model: summary.model,
                 datasets: summary.datasets,
@@ -283,7 +335,7 @@ async function main() {
         } catch (error) {
             const formattedError = formatError(error);
             const finishedAt = new Date().toISOString();
-            const failedOutputDir = path.resolve(baseDir, "bench_suite", "outputs", runConfig.run_name);
+            const failedOutputDir = path.resolve(resolveOutputRoot(baseDir), runConfig.run_name);
             const failedSummaryFile = writeFailedRunSummary(failedOutputDir, {
                 run_name: runConfig.run_name,
                 model_ref: runConfig.model_ref,
@@ -308,6 +360,7 @@ async function main() {
                 summary_file: failedSummaryFile,
                 leaderboard_file: "",
                 enabled_datasets: enabledDatasets,
+                discovered_from: runConfig.discovered_from || "",
                 error: formattedError,
             });
         }

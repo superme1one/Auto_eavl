@@ -9,6 +9,7 @@
 - `onnx`
 
 项目可以按统一配置完成模型自动识别、自动部署和统一评测，并支持单模型评测与批量模型评测两种工作方式。
+在当前版本中，也支持直接自动扫描 `models/` 和 `models_ascii/` 目录，对发现到的全部模型执行统一评测，无需再手工维护模型列表。
 
 ## 项目结构
 
@@ -80,6 +81,7 @@ auto_eval/
 
 - 支持单模型评测
 - 支持批量切换模型评测
+- 支持自动扫描模型目录并批量评测全部模型
 - 支持 `backend.type = "auto"` 自动识别模型类型
 - 支持统一配置运行全部数据集
 - 支持批量任务失败不中断后续模型
@@ -104,6 +106,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_gguf_eval.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_multi_eval.ps1 .\bench_suite\configs\model_batch_quick_all.json
+```
+
+如果希望直接扫描本地模型目录并一键评测全部模型，推荐使用：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_auto_eval.ps1
 ```
 
 ## Git 提交说明

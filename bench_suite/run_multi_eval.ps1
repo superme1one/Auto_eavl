@@ -3,13 +3,15 @@
 批量切换模型并顺序执行评测。
 
 .DESCRIPTION
-读取一个包含多个 model_ref 的批量配置文件，按顺序运行 gguf / safetensors / onnx 模型。
-脚本同样会先映射 X:，确保 GGUF 模型在 Windows 中文路径下可正常运行。
+支持两种模式：
+1. 传入批量配置文件；
+2. 使用 --auto-discover 自动扫描 models / models_ascii 下的模型并批量评测。
+
+脚本会先映射 X:，确保 GGUF 模型在 Windows 中文路径下也能正常运行。
 
 .USAGE
-在项目根目录执行：
-
-powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_multi_eval.ps1 .\bench_suite\configs\model_batch_quick_all.json
+powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_multi_eval.ps1 --config .\bench_suite\configs\model_batch_quick_all.json
+powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_multi_eval.ps1 --auto-discover
 #>
 
 $ErrorActionPreference = "Stop"
@@ -30,11 +32,17 @@ try {
         throw "Failed to map $drive to current workspace"
     }
 
-    $config = if ($args.Length -gt 0) { $args[0] } else { ".\bench_suite\configs\model_batch_quick_all.json" }
     Push-Location "$drive\"
     try {
         $env:BENCH_BASE_DIR = "$drive\"
-        node .\bench_suite\run_multi_eval.js --config $config
+        $nodeArgs = @(".\bench_suite\run_multi_eval.js")
+        if ($args.Length -gt 0) {
+            $nodeArgs += $args
+        }
+        else {
+            $nodeArgs += @("--config", ".\bench_suite\configs\model_batch_quick_all.json")
+        }
+        node @nodeArgs
     }
     finally {
         Pop-Location

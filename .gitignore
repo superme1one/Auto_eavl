@@ -32,6 +32,10 @@ bench_suite/outputs/**
 !bench_suite/outputs/
 !bench_suite/outputs/.gitkeep
 
+result/**
+!result/
+!result/.gitkeep
+
 # Local models / datasets
 models/**
 !models/

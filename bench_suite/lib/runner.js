@@ -28,6 +28,14 @@ function appendCsvRow(filePath, header, row) {
     fs.appendFileSync(filePath, lines.join("\n") + "\n");
 }
 
+function resolveOutputRoot(baseDir) {
+    const override = process.env.BENCH_OUTPUT_ROOT;
+    if (!override) {
+        return path.resolve(baseDir, "bench_suite", "outputs");
+    }
+    return path.isAbsolute(override) ? override : path.resolve(baseDir, override);
+}
+
 const LEADERBOARD_HEADER = [
     "run_name",
     "finished_at",
@@ -85,9 +93,10 @@ function writeLeaderboards(baseDir, outputDir, summary) {
     const rowObject = buildLeaderboardRow(summary);
     const header = LEADERBOARD_HEADER;
     const row = header.map(key => rowObject[key] ?? "");
+    const outputRoot = resolveOutputRoot(baseDir);
 
     writeCsv(path.join(outputDir, "leaderboard.csv"), [header, row]);
-    appendCsvRow(path.join(baseDir, "bench_suite", "outputs", "leaderboard.csv"), header, row);
+    appendCsvRow(path.join(outputRoot, "leaderboard.csv"), header, row);
 }
 
 async function runSingleDataset(name, adapter, backend, generation, datasetConfig, outputDir) {
@@ -166,7 +175,7 @@ async function runSingleDataset(name, adapter, backend, generation, datasetConfi
 
 async function runAll(config, baseDir) {
     const runName = config.run_name || `run_${nowStamp()}`;
-    const outputDir = path.resolve(baseDir, "bench_suite", "outputs", runName);
+    const outputDir = path.resolve(resolveOutputRoot(baseDir), runName);
     ensureDir(outputDir);
 
     const backendConfig = config.model.backend;
@@ -233,6 +242,7 @@ async function runAll(config, baseDir) {
 module.exports = {
     buildLeaderboardRow,
     LEADERBOARD_HEADER,
+    resolveOutputRoot,
     runAll,
     writeCsv,
 };

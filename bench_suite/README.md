@@ -6,6 +6,7 @@
 
 - 支持单模型评测
 - 支持批量切换 `model_ref` 顺序评测
+- 支持自动扫描 `models / models_ascii` 并批量评测全部模型
 - 支持通过 `bench_suite/model_registry.json` 统一管理模型定义
 - 支持 `backend.type = "auto"` 自动识别 `gguf / safetensors / onnx`
 - 单次 run 会输出 `summary.json` 和 `leaderboard.csv`
@@ -116,6 +117,35 @@ node .\bench_suite\run_multi_eval.js --config .\bench_suite\configs\model_batch_
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_multi_eval.ps1 .\bench_suite\configs\model_batch_gsm8k_one.json
+```
+
+### 自动扫描模型目录并批量评测
+
+如果你不想手动维护 `model_ref` 或批量配置，可以直接自动扫描 `models/` 和 `models_ascii/` 下的模型：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_auto_eval.ps1
+```
+
+这个入口会：
+
+- 自动扫描 `models/` 与 `models_ascii/`
+- 自动识别 `gguf / safetensors / onnx`
+- 自动生成批量任务
+- 自动运行全部已支持数据集
+- 自动输出批量汇总
+
+如果你只想先确认会扫描到哪些模型，不真正开始评测，可以先执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_auto_eval.ps1 --dry-run
+```
+
+也可以直接调用 Node 入口：
+
+```powershell
+node .\bench_suite\run_multi_eval.js --auto-discover
+node .\bench_suite\run_multi_eval.js --auto-discover --dry-run
 ```
 
 ### 批量配置字段
@@ -243,6 +273,7 @@ bench_suite/outputs/<batch_name>/
 
 - `batch_summary.json`
 - `batch_leaderboard.csv`
+- `discovered_models.json`：自动扫描模式下记录本次发现到的模型列表
 
 每个模型自己的详细结果仍会写到：
 
@@ -277,6 +308,7 @@ bench_suite/outputs/<run_name>/summary.json
 - `bench_suite/run_multi_eval.js`：批量模型评测入口
 - `bench_suite/run_gguf_eval.ps1`：GGUF 推荐入口
 - `bench_suite/run_multi_eval.ps1`：批量评测推荐入口
+- `bench_suite/run_auto_eval.ps1`：自动扫描模型目录并批量评测
 - `bench_suite/check_env.ps1`：环境检查
 - `bench_suite/install.ps1`：安装依赖与准备 ONNX 目录
 
