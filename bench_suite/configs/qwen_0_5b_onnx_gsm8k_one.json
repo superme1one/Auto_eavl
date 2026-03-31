@@ -1,0 +1,47 @@
+{
+  "run_name": "qwen_0_5b_onnx_gsm8k_one",
+  "model_ref": "qwen_0_5b_onnx",
+  "model": {
+    "backend": {
+      "port": 18011,
+      "device": "cpu"
+    },
+    "generation": {
+      "max_tokens": 256,
+      "temperature": 0.1,
+      "top_p": 1.0,
+      "top_k": 1
+    }
+  },
+  "datasets": {
+    "gsm8k": {
+      "enabled": true,
+      "path": "data_sets/GSM8k/test.jsonl",
+      "limit": 1,
+      "cooldown_ms": 0,
+      "timeout_ms": 120000
+    },
+    "drop": {
+      "enabled": false,
+      "path": "data_sets/DROP/validation.jsonl",
+      "limit": 0,
+      "cooldown_ms": 0,
+      "timeout_ms": 120000
+    },
+    "mmlu": {
+      "enabled": false,
+      "path": "data_sets/MMLU",
+      "limit_per_subject": 0,
+      "max_samples": 0,
+      "cooldown_ms": 0,
+      "timeout_ms": 120000
+    },
+    "triviaqa": {
+      "enabled": false,
+      "path": "data_sets/TriviaQA/verified-web-dev.json",
+      "limit": 0,
+      "cooldown_ms": 0,
+      "timeout_ms": 120000
+    }
+  }
+}

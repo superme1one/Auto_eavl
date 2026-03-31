@@ -1,0 +1,39 @@
+{
+  "batch_name": "model_batch_quick_all",
+  "model_refs": [
+    "qwen_0_5b_gguf_cpu",
+    "qwen_0_5b_safetensors",
+    "qwen_0_5b_onnx"
+  ],
+  "datasets": {
+    "gsm8k": {
+      "enabled": true,
+      "path": "data_sets/GSM8k/test.jsonl",
+      "limit": 10,
+      "cooldown_ms": 100,
+      "timeout_ms": 120000
+    },
+    "drop": {
+      "enabled": true,
+      "path": "data_sets/DROP/validation.jsonl",
+      "limit": 10,
+      "cooldown_ms": 100,
+      "timeout_ms": 120000
+    },
+    "mmlu": {
+      "enabled": true,
+      "path": "data_sets/MMLU",
+      "limit_per_subject": 1,
+      "max_samples": 10,
+      "cooldown_ms": 50,
+      "timeout_ms": 120000
+    },
+    "triviaqa": {
+      "enabled": true,
+      "path": "data_sets/TriviaQA/verified-web-dev.json",
+      "limit": 10,
+      "cooldown_ms": 100,
+      "timeout_ms": 120000
+    }
+  }
+}

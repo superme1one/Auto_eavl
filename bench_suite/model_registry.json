@@ -1,0 +1,65 @@
+{
+  "qwen_0_5b_gguf_cpu": {
+    "path": "models_ascii/qwen_0_5b_q4_k_m.gguf",
+    "backend": {
+      "type": "auto",
+      "host": "127.0.0.1",
+      "port": 18000,
+      "llama_server_path": "llama.cpp/build-cpu/bin/Release/llama-server.exe",
+      "python_path": "python",
+      "ctx_size": 2048,
+      "gpu_layers": 0,
+      "threads": 8,
+      "device": "cpu",
+      "trust_remote_code": true
+    },
+    "generation": {
+      "max_tokens": 256,
+      "temperature": 0.1,
+      "top_p": 1.0,
+      "top_k": 1
+    }
+  },
+  "qwen_0_5b_safetensors": {
+    "path": "models/Qwen2.5-0.5B-Instruct",
+    "backend": {
+      "type": "auto",
+      "host": "127.0.0.1",
+      "port": 18001,
+      "llama_server_path": "llama.cpp/build-cpu/bin/Release/llama-server.exe",
+      "python_path": "python",
+      "ctx_size": 4096,
+      "gpu_layers": 0,
+      "threads": 8,
+      "device": "auto",
+      "trust_remote_code": true
+    },
+    "generation": {
+      "max_tokens": 256,
+      "temperature": 0.1,
+      "top_p": 1.0,
+      "top_k": 1
+    }
+  },
+  "qwen_0_5b_onnx": {
+    "path": "models/Qwen2.5-0.5B-Instruct-ONNX",
+    "backend": {
+      "type": "auto",
+      "host": "127.0.0.1",
+      "port": 18011,
+      "llama_server_path": "llama.cpp/build-cpu/bin/Release/llama-server.exe",
+      "python_path": "python",
+      "ctx_size": 2048,
+      "gpu_layers": 0,
+      "threads": 8,
+      "device": "cpu",
+      "trust_remote_code": true
+    },
+    "generation": {
+      "max_tokens": 256,
+      "temperature": 0.1,
+      "top_p": 1.0,
+      "top_k": 1
+    }
+  }
+}

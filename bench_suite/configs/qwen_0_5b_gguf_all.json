@@ -1,0 +1,47 @@
+{
+  "run_name": "qwen_0_5b_gguf_all",
+  "model_ref": "qwen_0_5b_gguf_cpu",
+  "model": {
+    "backend": {
+      "port": 18000,
+      "ctx_size": 4096,
+      "device": "auto"
+    },
+    "generation": {
+      "max_tokens": 1024,
+      "temperature": 0.1,
+      "top_p": 1.0,
+      "top_k": 1
+    }
+  },
+  "datasets": {
+    "gsm8k": {
+      "enabled": true,
+      "path": "data_sets/GSM8k/test.jsonl",
+      "limit": 0,
+      "cooldown_ms": 500,
+      "timeout_ms": 300000
+    },
+    "drop": {
+      "enabled": true,
+      "path": "data_sets/DROP/validation.jsonl",
+      "limit": 100,
+      "cooldown_ms": 1000,
+      "timeout_ms": 300000
+    },
+    "mmlu": {
+      "enabled": true,
+      "path": "data_sets/MMLU",
+      "limit_per_subject": 50,
+      "cooldown_ms": 200,
+      "timeout_ms": 300000
+    },
+    "triviaqa": {
+      "enabled": true,
+      "path": "data_sets/TriviaQA/verified-web-dev.json",
+      "limit": 100,
+      "cooldown_ms": 500,
+      "timeout_ms": 120000
+    }
+  }
+}

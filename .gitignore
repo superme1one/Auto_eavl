@@ -1,0 +1,47 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.code-workspace
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local run configs
+bench_suite/run_config.local.json
+
+# Generated outputs
+bench_suite/outputs/
+
+# Local models / datasets
+models/
+models_ascii/
+data_sets/
+
+# llama.cpp local build artifacts
+llama.cpp/build*/
+llama.cpp/out/
+llama.cpp/models/
+llama.cpp/examples/server/webui/node_modules/
+llama.cpp/examples/server/webui/dist/
+
+# Logs / temp
+*.log
+*.tmp
