@@ -28,12 +28,25 @@ pnpm-debug.log*
 bench_suite/run_config.local.json
 
 # Generated outputs
-bench_suite/outputs/
+bench_suite/outputs/**
+!bench_suite/outputs/
+!bench_suite/outputs/.gitkeep
 
 # Local models / datasets
-models/
-models_ascii/
-data_sets/
+models/**
+!models/
+!models/**/
+!models/**/.gitkeep
+
+models_ascii/**
+!models_ascii/
+!models_ascii/**/
+!models_ascii/**/.gitkeep
+
+data_sets/**
+!data_sets/
+!data_sets/**/
+!data_sets/**/.gitkeep
 
 # llama.cpp local build artifacts
 llama.cpp/build*/
