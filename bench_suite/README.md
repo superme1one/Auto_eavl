@@ -7,6 +7,7 @@
 - 支持单模型评测
 - 支持批量切换 `model_ref` 顺序评测
 - 支持自动扫描 `models / models_ascii` 并批量评测全部模型
+- 自动扫描模式默认每个数据集只跑 100 题，单模型总量约 400 题
 - 支持通过 `bench_suite/model_registry.json` 统一管理模型定义
 - 支持 `backend.type = "auto"` 自动识别 `gguf / safetensors / onnx`
 - 单次 run 会输出 `summary.json` 和 `leaderboard.csv`
@@ -132,7 +133,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_auto_eval.
 - 自动扫描 `models/` 与 `models_ascii/`
 - 自动识别 `gguf / safetensors / onnx`
 - 自动生成批量任务
-- 自动运行全部已支持数据集
+- 自动运行四个默认数据集
+- 默认每个数据集只跑 100 题
 - 自动输出批量汇总
 
 如果你只想先确认会扫描到哪些模型，不真正开始评测，可以先执行：

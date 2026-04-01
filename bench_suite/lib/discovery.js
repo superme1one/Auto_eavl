@@ -9,7 +9,7 @@ const DEFAULT_DATASETS = {
     gsm8k: {
         enabled: true,
         path: "data_sets/GSM8k/test.jsonl",
-        limit: 0,
+        limit: 100,
         cooldown_ms: 500,
         timeout_ms: 300000,
     },
@@ -23,7 +23,8 @@ const DEFAULT_DATASETS = {
     mmlu: {
         enabled: true,
         path: "data_sets/MMLU",
-        limit_per_subject: 50,
+        limit_per_subject: 2,
+        max_samples: 100,
         cooldown_ms: 200,
         timeout_ms: 300000,
     },
@@ -166,6 +167,13 @@ function buildAutoDiscoverRunConfigs(baseDir, options = {}) {
     return {
         batch_name: batchName,
         mode: "auto_discover",
+        dataset_policy: {
+            description: "default auto-discover profile: 100 questions per dataset, about 400 questions total",
+            gsm8k_limit: 100,
+            drop_limit: 100,
+            mmlu_max_samples: 100,
+            triviaqa_limit: 100,
+        },
         scan_roots: scanRoots,
         discovered_models: models.map(model => ({
             source_root: model.source_root,

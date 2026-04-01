@@ -277,6 +277,7 @@ async function main() {
         const discoveryPayload = {
             batch_name: batchName,
             mode: "auto_discover",
+            dataset_policy: batchConfig.dataset_policy || null,
             scan_roots: batchConfig.scan_roots,
             discovered_models: batchConfig.discovered_models,
             total_models: runConfigs.length,
