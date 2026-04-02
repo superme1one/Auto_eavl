@@ -34,6 +34,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_auto_eval.
 
 执行该命令后，结果会默认保存到项目根目录的：
 
+我现在还想加一个需求，现在是用powershell -NoProfile -ExecutionPolicy Bypass -File .\bench_suite\run_auto_eval.ps1每个数据集只跑100题，我想再来一个run_auto_eval_all的，可以跑所有数据集的所有题
+还有模型目录，现在是几个模型运行跑，怎么有五个，以及每个模型是如何启动
 ```txt
 result/
 ```

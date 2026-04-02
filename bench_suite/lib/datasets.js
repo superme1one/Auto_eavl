@@ -94,7 +94,7 @@ const datasets = {
             }));
         },
         buildPrompt(sample) {
-            return `You are a math expert.\n\nQuestion:\n${sample.question}\n\nInstructions:\n1. Think step-by-step to solve the problem.\n2. Be concise but show the calculation clearly.\n3. End the response with: "#### <final_number>".\n\nResponse:\n`;
+            return `You are a math expert.\n\nQuestion:\n${sample.question}\n\nInstructions:\n1. Solve the problem as briefly as possible.\n2. Do not include long reasoning.\n3. End with exactly: #### <final_number>\n\nResponse:\n`;
         },
         evaluate(sample, output) {
             const pred = extractGsm8kPred(output);
@@ -121,8 +121,8 @@ const datasets = {
         },
         buildPrompt(sample) {
             const instructions = sample.isNumberType
-                ? "1. Think step-by-step based on the passage.\n2. The answer must be a number.\n3. Output final answer as: Answer: <number>\n4. Use Arabic numerals only."
-                : "1. Think step-by-step based on the passage.\n2. Extract the answer directly from the passage if possible.\n3. Output final answer as: Answer: <short phrase>.";
+                ? "1. Read the passage and answer briefly.\n2. The answer must be a number.\n3. Output only: Answer: <number>\n4. Use Arabic numerals only."
+                : "1. Read the passage and answer briefly.\n2. Extract the answer directly if possible.\n3. Output only: Answer: <short phrase>.";
             return `You are an expert in reading comprehension and arithmetic.\n\nPassage:\n${sample.passage}\n\nQuestion:\n${sample.question}\n\nInstructions:\n${instructions}\n`;
         },
         evaluate(sample, output) {
@@ -168,7 +168,7 @@ const datasets = {
             return rows;
         },
         buildPrompt(sample) {
-            return `You are an expert in ${sample.subject.replace(/_/g, " ")}.\n\nQuestion:\n${sample.prompt}\n\nInstructions:\n1. Think step by step.\n2. Be concise.\n3. End with exactly: Answer: X where X is A, B, C, or D.\n`;
+            return `You are an expert in ${sample.subject.replace(/_/g, " ")}.\n\nQuestion:\n${sample.prompt}\n\nInstructions:\nAnswer as briefly as possible.\nEnd with exactly: Answer: X where X is A, B, C, or D.\n`;
         },
         evaluate(sample, output) {
             const patterns = [
@@ -225,7 +225,7 @@ const datasets = {
             }));
         },
         buildPrompt(sample) {
-            return `You are a concise trivia expert.\n\nQuestion:\n${sample.question}\n\nInstructions:\n1. Think step-by-step to recall the correct fact.\n2. Output the final answer concisely.\n3. Start the final answer with: Answer: \n`;
+            return `You are a concise trivia expert.\n\nQuestion:\n${sample.question}\n\nInstructions:\nRespond with the shortest correct answer.\nStart the final answer with: Answer:\n`;
         },
         evaluate(sample, output) {
             const answer = extractAnswerText(output);

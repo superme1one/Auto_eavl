@@ -1,3 +1,4 @@
+const fs = require("fs");
 const path = require("path");
 
 const { buildAutoDiscoverRunConfigs, DEFAULT_SCAN_ROOTS } = require("./lib/discovery");
@@ -243,6 +244,50 @@ function writeFailedRunSummary(outputDir, payload) {
     return summaryPath;
 }
 
+function tryLoadCompletedRun(baseDir, runConfig) {
+    const outputDir = path.resolve(resolveOutputRoot(baseDir), runConfig.run_name);
+    const summaryPath = path.join(outputDir, "summary.json");
+    if (!runConfig.datasets || !Object.keys(runConfig.datasets).length) {
+        return null;
+    }
+    if (!fs.existsSync(summaryPath)) {
+        return null;
+    }
+
+    const summary = readJson(summaryPath);
+    if (!summary || summary.status === "failed" || !summary.datasets) {
+        return null;
+    }
+
+    const enabledDatasets = Object.entries(runConfig.datasets)
+        .filter(([, config]) => !!(config && config.enabled))
+        .map(([name]) => name);
+    const hasAllDatasets = enabledDatasets.every(name => !!summary.datasets[name]);
+    if (!hasAllDatasets) {
+        return null;
+    }
+
+    const startedAtMs = summary.started_at ? Date.parse(summary.started_at) : NaN;
+    const finishedAtMs = summary.finished_at ? Date.parse(summary.finished_at) : NaN;
+    return {
+        batch_order: runConfig.batch_order,
+        model_ref: runConfig.model_ref,
+        run_name: runConfig.run_name,
+        status: "success",
+        started_at: summary.started_at || "",
+        finished_at: summary.finished_at || "",
+        duration_ms: Number.isNaN(startedAtMs) || Number.isNaN(finishedAtMs) ? "" : (finishedAtMs - startedAtMs),
+        output_dir: outputDir,
+        summary_file: summaryPath,
+        leaderboard_file: path.join(outputDir, "leaderboard.csv"),
+        enabled_datasets: enabledDatasets,
+        discovered_from: runConfig.discovered_from || "",
+        leaderboard: buildLeaderboardRow(summary),
+        model: summary.model,
+        datasets: summary.datasets,
+    };
+}
+
 async function main() {
     const args = parseArgs(process.argv);
     if (!args.config && !args.autoDiscover) {
@@ -303,6 +348,17 @@ async function main() {
     );
 
     for (const runConfig of runConfigs) {
+        const completedResult = tryLoadCompletedRun(baseDir, runConfig);
+        if (completedResult) {
+            console.log(`\n[SKIP] run_name=${runConfig.run_name} already completed, reusing existing summary`);
+            results.push(completedResult);
+            writeBatchArtifacts(
+                batchOutputDir,
+                buildBatchSummary(batchName, configPath, batchOutputDir, startedAt, runConfigs.length, results),
+            );
+            continue;
+        }
+
         const runStartedAtMs = Date.now();
         const runStartedAt = new Date(runStartedAtMs).toISOString();
         const enabledDatasets = listEnabledDatasets(runConfig.datasets);

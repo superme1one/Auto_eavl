@@ -36,6 +36,53 @@ function resolveOutputRoot(baseDir) {
     return path.isAbsolute(override) ? override : path.resolve(baseDir, override);
 }
 
+function readJsonlRecords(filePath) {
+    if (!fs.existsSync(filePath)) {
+        return [];
+    }
+
+    const records = [];
+    for (const line of fs.readFileSync(filePath, "utf-8").split(/\r?\n/).filter(Boolean)) {
+        try {
+            records.push(JSON.parse(line));
+        } catch (error) {
+            console.warn(`[RESUME WARN] Ignoring malformed JSONL line in ${filePath}: ${error.message}`);
+        }
+    }
+    return records;
+}
+
+function buildDatasetSummary(name, adapter, records, totalSamples) {
+    let correct = 0;
+    let valid = 0;
+    let totalLatencyMs = 0;
+
+    for (const record of records) {
+        if (record.ok) {
+            correct += 1;
+        }
+        if (!record.error) {
+            valid += 1;
+        }
+        totalLatencyMs += Number(record.latency_ms || 0);
+    }
+
+    const summary = {
+        dataset: name,
+        total: totalSamples,
+        valid,
+        correct,
+        accuracy: Number((safeDivide(correct, totalSamples) * 100).toFixed(2)),
+        avg_latency_ms: Number((safeDivide(totalLatencyMs, totalSamples)).toFixed(2)),
+    };
+
+    if (typeof adapter.finalize === "function") {
+        Object.assign(summary, adapter.finalize(records));
+    }
+
+    return summary;
+}
+
 const LEADERBOARD_HEADER = [
     "run_name",
     "finished_at",
@@ -101,17 +148,31 @@ function writeLeaderboards(baseDir, outputDir, summary) {
 
 async function runSingleDataset(name, adapter, backend, generation, datasetConfig, outputDir) {
     const resultFile = path.join(outputDir, `${name}.jsonl`);
-    fs.writeFileSync(resultFile, "");
-
     const samples = adapter.load(datasetConfig.path, datasetConfig);
-    const records = [];
-    let correct = 0;
-    let valid = 0;
-    let totalLatencyMs = 0;
+    let records = readJsonlRecords(resultFile);
+    if (records.length > samples.length) {
+        records = records.slice(0, samples.length);
+    }
+
+    if (!fs.existsSync(resultFile)) {
+        fs.writeFileSync(resultFile, "");
+    }
+
+    let correct = records.filter(record => record.ok).length;
+    let valid = records.filter(record => !record.error).length;
+    let totalLatencyMs = records.reduce((acc, record) => acc + Number(record.latency_ms || 0), 0);
+    const completedCount = records.length;
 
     console.log(`\n[RUN] ${name} | samples=${samples.length}`);
+    if (completedCount > 0) {
+        console.log(`[RESUME] ${name} | completed=${completedCount}/${samples.length}`);
+    }
+    if (completedCount >= samples.length) {
+        console.log(`[SKIP] ${name} already completed, reusing existing results`);
+        return buildDatasetSummary(name, adapter, records, samples.length);
+    }
 
-    for (let i = 0; i < samples.length; i++) {
+    for (let i = completedCount; i < samples.length; i++) {
         const sample = samples[i];
         const prompt = adapter.buildPrompt(sample);
         const startedAt = Date.now();
@@ -157,20 +218,7 @@ async function runSingleDataset(name, adapter, backend, generation, datasetConfi
         }
     }
 
-    const summary = {
-        dataset: name,
-        total: samples.length,
-        valid,
-        correct,
-        accuracy: Number((safeDivide(correct, samples.length) * 100).toFixed(2)),
-        avg_latency_ms: Number((safeDivide(totalLatencyMs, samples.length)).toFixed(2)),
-    };
-
-    if (typeof adapter.finalize === "function") {
-        Object.assign(summary, adapter.finalize(records));
-    }
-
-    return summary;
+    return buildDatasetSummary(name, adapter, records, samples.length);
 }
 
 async function runAll(config, baseDir) {
